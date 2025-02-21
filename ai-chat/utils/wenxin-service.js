@@ -1,0 +1,90 @@
+import config from './ai-config'
+
+class WenxinService {
+  constructor() {
+    this.accessToken = '';
+  }
+
+  // 判断当前运行环境
+  getPlatform() {
+    // #ifdef H5
+    return 'h5';
+    // #endif
+    
+    // #ifdef MP-WEIXIN
+    return 'mp-weixin';
+    // #endif
+  }
+
+  // 获取基础URL
+  getBaseUrl() {
+    const platform = this.getPlatform();
+    return platform === 'h5' ? '/api' : 'https://aip.baidubce.com';
+  }
+
+  // 获取access_token
+  async getAccessToken() {
+    try {
+      const baseUrl = this.getBaseUrl();
+      const url = `${baseUrl}/oauth/2.0/token?grant_type=client_credentials&client_id=${config.API_KEY}&client_secret=${config.SECRET_KEY}`;
+      
+      const { data } = await uni.request({
+        url,
+        method: 'POST',
+        header: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (data.access_token) {
+        this.accessToken = data.access_token;
+        return this.accessToken;
+      } else {
+        throw new Error('获取access_token失败');
+      }
+    } catch (error) {
+      console.error('获取access_token错误:', error);
+      throw error;
+    }
+  }
+
+  // 调用文心一言API
+  async chat(messages) {
+    try {
+      if (!this.accessToken) {
+        await this.getAccessToken();
+      }
+      
+      const baseUrl = this.getBaseUrl();
+      const url = `${baseUrl}/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions?access_token=${this.accessToken}`;
+      
+      const { data } = await uni.request({
+        url,
+        method: 'POST',
+        header: {
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messages: messages
+        }
+      });
+      
+      if (data.error_code) {
+        if (data.error_code === 110 || data.error_code === 111) {
+          this.accessToken = '';
+          return this.chat(messages);
+        }
+        throw new Error(data.error_msg);
+      }
+      
+      return data.result;
+    } catch (error) {
+      console.error('调用文心一言API错误:', error);
+      throw error;
+    }
+  }
+}
+
+const wenxinService = new WenxinService();
+export const chatWithWenxin = (messages) => wenxinService.chat(messages);

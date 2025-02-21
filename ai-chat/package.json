@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "dev:h5": "cross-env UNI_PLATFORM=h5 vue-cli-service uni-serve",
+    "build:h5": "cross-env UNI_PLATFORM=h5 vue-cli-service uni-build",
+    "dev:mp-weixin": "cross-env UNI_PLATFORM=mp-weixin vue-cli-service uni-build --watch",
+    "build:mp-weixin": "cross-env UNI_PLATFORM=mp-weixin vue-cli-service uni-build"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  }
+}
